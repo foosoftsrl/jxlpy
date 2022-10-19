@@ -1,7 +1,7 @@
 # distutils: language = c++
 # cython: language_level = 3
 
-from libc.stdint cimport uint8_t, uint32_t, uint64_t
+from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t
 from libc.string cimport memset
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
@@ -442,7 +442,7 @@ cdef extern from 'jxl/encode.h':
     ctypedef struct JxlEncoder:
         pass
 
-    ctypedef struct JxlEncoderOptions:
+    ctypedef struct JxlEncoderFrameSettings:
         pass
 
     ctypedef enum JxlEncoderStatus:
@@ -450,6 +450,10 @@ cdef extern from 'jxl/encode.h':
         JXL_ENC_ERROR
         JXL_ENC_NEED_MORE_OUTPUT
         JXL_ENC_NOT_SUPPORTED
+
+    ctypedef enum JxlEncoderFrameSettingId:
+        JXL_ENC_FRAME_SETTING_EFFORT
+        JXL_ENC_FRAME_SETTING_DECODING_SPEED
 
     JxlEncoder* JxlEncoderCreate(
         const JxlMemoryManager* memory_manager
@@ -476,13 +480,13 @@ cdef extern from 'jxl/encode.h':
     ) nogil
 
     JxlEncoderStatus JxlEncoderAddJPEGFrame(
-        const JxlEncoderOptions* options,
+        const JxlEncoderFrameSettings* options,
         const uint8_t* buffer,
         size_t size
     ) nogil
 
     JxlEncoderStatus JxlEncoderAddImageFrame(
-        const JxlEncoderOptions* options,
+        const JxlEncoderFrameSettings* options,
         const JxlPixelFormat* pixel_format,
         const void* buffer,
         size_t size
@@ -516,29 +520,32 @@ cdef extern from 'jxl/encode.h':
         JXL_BOOL use_container
     ) nogil
 
-    JxlEncoderStatus JxlEncoderOptionsSetLossless(
-        JxlEncoderOptions* options,
+    JxlEncoderStatus JxlEncoderSetFrameLossless(
+        JxlEncoderFrameSettings* frame_settings, 
+        JXL_BOOL lossless);
+
+    JxlEncoderStatus JxlEncoderFrameSettingsSetLossless(
+        JxlEncoderFrameSettings* options,
         JXL_BOOL lossless
     ) nogil
 
-    JxlEncoderStatus JxlEncoderOptionsSetDecodingSpeed(
-        JxlEncoderOptions* options,
-        int tier
-    ) nogil
+    JxlEncoderStatus JxlEncoderFrameSettingsSetOption(
+        JxlEncoderFrameSettings* frame_settings, JxlEncoderFrameSettingId option,
+        int64_t value) nogil
 
-    JxlEncoderStatus JxlEncoderOptionsSetEffort(
-        JxlEncoderOptions* options,
+    JxlEncoderStatus JxlEncoderFrameSettingsSetEffort(
+        JxlEncoderFrameSettings* options,
         int effort
     ) nogil
 
-    JxlEncoderStatus JxlEncoderOptionsSetDistance(
-        JxlEncoderOptions* options,
+    JxlEncoderStatus JxlEncoderSetFrameDistance(
+        JxlEncoderFrameSettings* options,
         float distance
     ) nogil
 
-    JxlEncoderOptions* JxlEncoderOptionsCreate(
+    JxlEncoderFrameSettings* JxlEncoderFrameSettingsCreate(
         JxlEncoder* enc,
-        const JxlEncoderOptions* source
+        const JxlEncoderFrameSettings* source
     ) nogil
 
     void JxlColorEncodingSetToSRGB(
@@ -606,7 +613,7 @@ cdef class JXLPyEncoder:
     cdef uint8_t* src
     cdef void* runner
     cdef JxlEncoder* encoder
-    cdef JxlEncoderOptions* options
+    cdef JxlEncoderFrameSettings* options
     cdef JxlEncoderStatus status
     cdef JxlBasicInfo basic_info
     cdef JxlPixelFormat pixel_format
@@ -732,31 +739,31 @@ cdef class JXLPyEncoder:
         if self.status != JXL_ENC_SUCCESS:
             raise JXLPyError('JxlEncoderUseContainer', self.status)
 
-        self.options = JxlEncoderOptionsCreate(self.encoder, NULL)
+        self.options = JxlEncoderFrameSettingsCreate(self.encoder, NULL)
         if self.options == NULL:
-            raise JXLPyError('JxlEncoderOptionsCreate')
+            raise JXLPyError('JxlEncoderFrameSettingsCreate')
         
         distance = get_distance(quality)
         
-        self.status = JxlEncoderOptionsSetLossless(self.options, lossless)
+        self.status = JxlEncoderSetFrameLossless(self.options, lossless)
         if self.status != JXL_ENC_SUCCESS:
-            raise JXLPyError('JxlEncoderOptionsSetLossless', self.status)
+            raise JXLPyError('JxlEncoderFrameSettingsSetLossless', self.status)
 
-        self.status = JxlEncoderOptionsSetDistance(self.options, distance)
+        self.status = JxlEncoderSetFrameDistance(self.options, distance)
         if self.status != JXL_ENC_SUCCESS:
-            raise JXLPyError('JxlEncoderOptionsSetDistance', self.status)
+            raise JXLPyError('JxlEncoderSetFrameDistance', self.status)
 
-        self.status = JxlEncoderOptionsSetDecodingSpeed(
-            self.options, decoding_speed
+        self.status = JxlEncoderFrameSettingsSetOption(
+            self.options, JXL_ENC_FRAME_SETTING_DECODING_SPEED, decoding_speed
         )
         if self.status != JXL_ENC_SUCCESS:
             raise JXLPyError(
-                'JxlEncoderOptionsSetDecodingSpeed', self.status
+                'JxlEncoderFrameSettingsSetDecodingSpeed', self.status
                 )
 
-        self.status = JxlEncoderOptionsSetEffort(self.options, effort)
+        self.status = JxlEncoderFrameSettingsSetOption(self.options, JXL_ENC_FRAME_SETTING_EFFORT, effort)
         if self.status != JXL_ENC_SUCCESS:
-            raise JXLPyError('JxlEncoderOptionsSetEffort', self.status)
+            raise JXLPyError('JxlEncoderFrameSettingsSetEffort', self.status)
 
 
     def add_frame(self, input_data: bytes):
@@ -937,7 +944,7 @@ cdef class JXLPyDecoder(object):
                 elif self.basic_info.bits_per_sample <= 16:
                     self.pixel_format.data_type = JXL_TYPE_UINT16
                 elif self.basic_info.bits_per_sample <= 32:
-                    self.pixel_format.data_type = JXL_TYPE_UINT32
+                    self.pixel_format.data_type = JXL_TYPE_FLOAT
 
             else:
                 # TODO: write the correct way to get information about an image
