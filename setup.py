@@ -10,7 +10,7 @@ buildscript=os.getcwd() + "/build_prerequisites.sh"
 builddir=os.getcwd() + f"/build/{machine}"
 class build(build_module.build):
   def run(self):
-    os.makedirs(builddir)
+    os.makedirs(builddir,exist_ok=True)
     p = subprocess.Popen(["bash", buildscript, machine], cwd=builddir)
     p.wait()
 #    os.system(f'./build_prerequisites.sh \(machine)> build.log 2>&1')

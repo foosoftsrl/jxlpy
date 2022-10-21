@@ -44,6 +44,7 @@ function build_libjxl() {
   make -j$(nproc) install
   #We want a static build, let's remove all dylibs
   rm $BUILDDIR/sysroot/lib/*dylib
+  rm $BUILDDIR/sysroot/lib/*so
   popd
 }
 
