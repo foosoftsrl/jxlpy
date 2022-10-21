@@ -1,17 +1,30 @@
 from setuptools import Extension, setup
 from Cython.Build import cythonize
+from distutils.command import build as build_module
+import os
+import subprocess
+import platform
 
+machine=platform.machine()
+buildscript=os.getcwd() + "/build_prerequisites.sh"
+builddir=os.getcwd() + f"/build/{machine}"
+class build(build_module.build):
+  def run(self):
+    os.makedirs(builddir)
+    p = subprocess.Popen(["bash", buildscript, machine], cwd=builddir)
+    p.wait()
+#    os.system(f'./build_prerequisites.sh \(machine)> build.log 2>&1')
+    build_module.build.run(self)
 
 with open("README.md", 'r') as f:
     long_description = f.read()
-
 
 jxlpy_ext = Extension(
     name="_jxlpy",
     sources=["_jxlpy/_jxl.pyx"],
     include_dirs=[],
     extra_compile_args=['-O2'],
-    extra_link_args=['-ljxl', '-ljxl_threads'],
+    extra_link_args=[f"-L{builddir}/sysroot/lib","-ljxl","-ljxl_threads","-lbrotlidec-static","-lbrotlienc-static","-lbrotlicommon-static","-lhwy"],
     language='c++',
 )
 
@@ -35,6 +48,9 @@ setup(name='jxlpy',
       extras_require={'pillow': ['Pillow']},
       python_requires='>=3.4',
       ext_modules=cythonize([jxlpy_ext]),
+      cmdclass = {
+        'build': build,
+      },
       classifiers=[
           'Development Status :: 3 - Alpha',
           'Intended Audience :: Developers',
