@@ -22,7 +22,7 @@ with open("README.md", 'r') as f:
 jxlpy_ext = Extension(
     name="_jxlpy",
     sources=["_jxlpy/_jxl.pyx"],
-    include_dirs=[],
+    include_dirs=[f"{builddir}/sysroot/include"],
     extra_compile_args=['-O2'],
     extra_link_args=[f"-L{builddir}/sysroot/lib","-ljxl","-ljxl_threads","-lbrotlidec-static","-lbrotlienc-static","-lbrotlicommon-static","-lhwy"],
     language='c++',
