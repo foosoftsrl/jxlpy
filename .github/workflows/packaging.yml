@@ -19,6 +19,8 @@ jobs:
       CIBW_BEFORE_ALL: >
         pip install cmake>=3.5 &&
         (if [ "$(uname)" == "Linux" ]; then yum install -y devtoolset-10-libatomic-devel; fi)
+      CIBW_BUILD_VERBOSITY_MACOS: 3
+      CIBW_ARCHS_MACOS: x86_64
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
