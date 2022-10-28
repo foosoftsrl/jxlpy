@@ -1,8 +1,10 @@
+#!/bin/bash
+set -e
+
 BUILDDIR=$(readlink -f $PWD)
 ARCHITECTURE=$1
 
 echo builddir=$BUILDDIR
-
 
 if [[ "$(uname)" == 'Darwin' ]]; then
   alias nproc="sysctl -n hw.logicalcpu" # As opposed to `hw.physicalcpu`
@@ -40,11 +42,10 @@ function build_libjxl() {
   git checkout v0.7.0
   mkdir -p build
   cd build
-  cmake -DCMAKE_MACOSX_RPATH=0 -DCMAKE_OSX_ARCHITECTURES=$ARCHITECTURE -DJPEGXL_ENABLE_TOOLS=OFF -DBUILD_TESTING=OFF -DJPEGXL_BUNDLE_LIBPNG=ON -DCMAKE_INSTALL_PREFIX=$BUILDDIR/sysroot ..
+  cmake -DCMAKE_MACOSX_RPATH=0 -DCMAKE_OSX_ARCHITECTURES=$ARCHITECTURE -DJPEGXL_ENABLE_TOOLS=OFF -DBUILD_TESTING=OFF -DJPEGXL_BUNDLE_LIBPNG=ON -DJPEGXL_ENABLE_BENCHMARK=OFF -DJPEGXL_ENABLE_TOOLS=OFF -DJPEGXL_ENABLE_DEVTOOLS=OFF -DCMAKE_INSTALL_PREFIX=$BUILDDIR/sysroot ..
   make -j$(nproc) install
-  #We want a static build, let's remove all dylibs
-  rm $BUILDDIR/sysroot/lib/*dylib
-  rm $BUILDDIR/sysroot/lib/*so
+  #We want a static build, let's remove all shared objects
+  rm -f $BUILDDIR/sysroot/lib/*dylib $BUILDDIR/sysroot/lib/*so
   popd
 }
 
