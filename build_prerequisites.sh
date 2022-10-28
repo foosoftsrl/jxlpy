@@ -25,6 +25,10 @@ function checkout_libjxl() {
   fi
   cd libjxl
   git checkout v0.7.0
+  # Remove fsized-deallocation. Does not work on github agents
+  if [[ "$(uname)" == 'Darwin' ]]; then
+    sed -i -- 's/-fsized-deallocation//g' lib/CMakeLists.txt
+  fi
   popd
 }
 
