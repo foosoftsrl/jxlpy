@@ -24,7 +24,10 @@ jxlpy_ext = Extension(
     sources=["_jxlpy/_jxl.pyx"],
     include_dirs=[f"{builddir}/sysroot/include"],
     extra_compile_args=['-O2'],
-    extra_link_args=[f"-L{builddir}/sysroot/lib","-ljxl","-ljxl_threads","-lbrotlidec-static","-lbrotlienc-static","-lbrotlicommon-static","-lhwy"],
+    extra_link_args=[
+        f"-L{builddir}/sysroot/lib",
+        f"-L{builddir}/sysroot/lib64",
+        "-ljxl","-ljxl_threads","-lbrotlidec-static","-lbrotlienc-static","-lbrotlicommon-static","-lhwy"],
     language='c++',
 )
 
