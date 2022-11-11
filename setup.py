@@ -5,18 +5,25 @@ import os
 import subprocess
 import platform
 
-# This is the way, if I get it right, in which CIBUILDWHEEL tells us what the architecture is on MACOS
+machine=platform.machine()
+print(f"platform machine={machine}")
+
+# This is the way in which CIBUILDWHEEL tells us what the architecture is on MACOS. There should be a way to get it in other places, I don't know it
 archflags = os.environ.get("ARCHFLAGS", None)
 print(f"archflags={archflags}")
-machine=platform.machine()
+if archflags == "--arch arm64":
+  machine="arm64"
+print(f"target machine={machine}")
+
 buildscript=os.getcwd() + "/build_prerequisites.sh"
 builddir=os.getcwd() + f"/build/{machine}"
+
+
 class build(build_module.build):
   def run(self):
     os.makedirs(builddir,exist_ok=True)
     p = subprocess.Popen(["bash", buildscript, machine], cwd=builddir)
     p.wait()
-#    os.system(f'./build_prerequisites.sh \(machine)> build.log 2>&1')
     build_module.build.run(self)
 
 with open("README.md", 'r') as f:
