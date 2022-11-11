@@ -11,7 +11,7 @@ print(f"platform machine={machine}")
 # This is the way in which CIBUILDWHEEL tells us what the architecture is on MACOS. There should be a way to get it in other places, I don't know it
 archflags = os.environ.get("ARCHFLAGS", None)
 print(f"archflags={archflags}")
-if archflags == "--arch arm64":
+if archflags == "-arch arm64":
   machine="arm64"
 print(f"target machine={machine}")
 
