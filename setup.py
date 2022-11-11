@@ -7,7 +7,7 @@ import platform
 
 # This is the way, if I get it right, in which CIBUILDWHEEL tells us what the architecture is on MACOS
 archflags = os.environ.get("ARCHFLAGS", None)
-print(f"archflags=\(archflags)")
+print(f"archflags={archflags}")
 machine=platform.machine()
 buildscript=os.getcwd() + "/build_prerequisites.sh"
 builddir=os.getcwd() + f"/build/{machine}"
